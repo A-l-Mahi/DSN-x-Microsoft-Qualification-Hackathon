@@ -1,0 +1,179 @@
+---
+title: "dsnQuali2"
+author: "Mahi Aminu Aliyu"
+date: "2024-09-30"
+output: html_document
+---
+
+```{r}
+library(dplyr)
+
+df <- read.csv("dataset/Train Dataset .csv")
+test_df <- read.csv("dataset/Test Dataset.csv")
+
+colNames = colnames(df)
+colnames(test_df) <- colNames[1:14]
+
+#df <- df %>% select(-c("Id"))
+test_id = test_df[1]
+#test_df <- test_df %>% select(-c("Id"))
+df
+test_df
+```
+
+```{r }
+# Sample data (e.g., age values)
+set.seed(123)
+# Compute the WSS for 1 to 10 clusters
+wss <- sapply(1:10, function(k) {
+  kmeans(df$chol, centers = k, nstart = 10)$tot.withinss
+})
+
+# Plot WSS vs number of clusters
+plot(1:10, wss, type = "b", pch = 19, frame = FALSE,
+     xlab = "Number of Clusters (k)",
+     ylab = "Total Within-Cluster Sum of Squares (WSS)",
+     main = "Elbow Method for Optimal k")
+
+```
+
+```{r }
+# format data for decision trees
+head(df)
+
+summary(df)
+colNames = colnames(df)
+
+length(colNames)
+
+print(colNames)
+
+table(df$tar)
+
+#lm(target~., data = df)
+str(df)
+
+plot(df$Age, col = df$target)
+
+str(df)
+
+
+```
+
+```{r }
+library(ggplot2)
+
+df_df <-df[-c(1)]
+str(df_df)
+
+
+round(lm(target ~ ., data = df_df)$coef, 10)
+
+ggplot(df, aes_string(x = "Age", fill = "age_clusters")) +
+    geom_histogram(bins = 30, color = "black", alpha = 0.7) +
+    theme_minimal() +
+    labs(title = paste("K-means Clustering of", "Age", "into", clusters, "Clusters"),
+         x = "Age", y = "Frequency") +
+    -scale_fill_brewer(palette = "Set3", name = "Age Cluster") +
+    theme(legend.position = "bottom")
+
+
+## notes
+## I need to know which of the feature gives the best split.
+## I am trying to know which of the features if split will contribute best to the target variable.
+```
+
+```{r}
+library(dplyr)
+# this cell will convert all cells into categories
+
+get_clusters_df <- function(df){
+    #Get the cluster for the following:
+    #    age
+    #    trestbps
+    #    chol
+    #    thelach
+        
+    # cluster for age
+    age_clusters = kmeans(df$Age, centers = 3)
+    
+    df$age_clusters <- age_clusters$cluster
+    
+    # cluster for trestbps
+    trestbps_clusters = kmeans(df$trestbps, centers = 3)
+    
+    df$trestbps_clusters <- trestbps_clusters$cluster
+    
+    #cluster for chol
+    chol_clusters = kmeans(df$chol, centers = 3)
+    
+    df$chol_clusters <- chol_clusters$cluster
+
+    # cluster for thalach
+    
+    thalach_clusters = kmeans(df$thalach, centers = 3)
+    
+    df$thalach_clusters <- thalach_clusters$cluster
+    
+    return(df)    
+}
+
+df_clustered = get_clusters_df(df)
+test_df_clustered <- get_clusters_df(test_df)
+```
+
+
+```{r }
+library("fastDummies")
+
+get_dummies <- function(df){
+    dummy_data <- dummy_cols(df, select_columns = c("age_clusters"), remove_selected_columns = TRUE)
+    dummy_data <- dummy_cols(dummy_data, select_columns = c("trestbps_clusters"), remove_selected_columns = TRUE)
+    dummy_data <- dummy_cols(dummy_data, select_columns = c("chol_clusters"), remove_selected_columns = TRUE)
+    dummy_data <- dummy_cols(dummy_data, select_columns = c("thalach_clusters"), remove_selected_columns = TRUE)
+    
+    return(dummy_data)
+    
+}
+
+df_dummies <- get_dummies(df_clustered)
+test_dummies <- get_dummies(test_df_clustered)
+
+colnames(df_dummies)
+colnames(test_dummies)
+```
+
+
+
+```{r}
+# this cells the train csv file
+#test_dummies$Id = test_id
+
+write.csv(df_clustered, file = "train-03-06.csv", row.names = FALSE)
+write.csv(test_df_clustered, file = "test-03-06.csv", row.names = FALSE)
+
+str(df_clustered)
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
